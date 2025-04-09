@@ -1,11 +1,113 @@
-<!-- index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>My GitHub Page</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lock-Free Priority-Aware Work-Stealing Deque</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      line-height: 1.6;
+      padding: 2rem;
+      background-color: #f5f7fa;
+      color: #222;
+    }
+    h1, h2 {
+      color: #2c3e50;
+    }
+    h1 {
+      margin-bottom: 0.2em;
+    }
+    h2 {
+      margin-top: 1.5em;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 0.3em;
+    }
+    pre {
+      background-color: #efefef;
+      padding: 1em;
+      overflow-x: auto;
+      font-size: 0.9em;
+    }
+    code {
+      font-family: Consolas, monospace;
+    }
+    ul {
+      padding-left: 1.5em;
+    }
+    .section {
+      margin-bottom: 2em;
+    }
+  </style>
 </head>
 <body>
-  <h1>Hello, GitHub Pages!</h1>
-  <p>This is my first hosted webpage.</p>
+  <h1>Lock-Free, Priority-Aware Work-Stealing Deque</h1>
+
+  <div class="section">
+    <h2>Summary</h2>
+    <p>We intend to build a lock-free, priority-aware work-stealing deque for dynamic task scheduling in parallel computing systems. Each worker thread maintains a priority deque and pushes/pops tasks locally, while stealing tasks from others based on priority. This is achieved using atomic operations (<code>compare_exchange</code>, <code>fetch_add</code>) in OpenMP and optionally MPI. We aim to benchmark the implementation on shared-memory (8–128 cores) and multi-node systems using MPI, testing throughput, steal attempts, and priority correctness.</p>
+  </div>
+
+  <div class="section">
+    <h2>Background</h2>
+    <p>Work stealing allows idle threads to dynamically balance load by stealing tasks from others. Traditional deques are extended here with priority awareness. Atomic operations replace locks to avoid contention. This system supports fine-grained concurrency, priority-driven task selection, and hybrid OpenMP+MPI environments for full scalability. Benchmarking includes throughput, steal success rate, and accuracy of priority execution.</p>
+  </div>
+
+  <div class="section">
+    <h2>Pseudocode</h2>
+    <pre><code>while not done:
+    task = pop_local_highest_priority_task()
+    if task != NULL:
+        execute(task)
+    else:
+        victim = random_other_thread()
+        task = steal_lowest_priority_task_from(victim)
+        if task != NULL:
+            execute(task)
+        else:
+            spin_wait()</code></pre>
+  </div>
+
+  <div class="section">
+    <h2>The Challenge</h2>
+    <p>Each thread handles 1000 tasks with mixed priorities. After executing <code>k</code> tasks, it may steal from others. We compare two approaches:</p>
+    <ul>
+      <li><strong>Shared deque:</strong> Easy access but prone to false sharing and contention.</li>
+      <li><strong>Thread-local deques:</strong> Efficient but synchronization overhead on status propagation.</li>
+    </ul>
+    <p>Stealing with priorities can cause inversion if not carefully controlled. We explore ways to balance fairness, correctness, and efficiency under saturation and priority skew.</p>
+  </div>
+
+  <div class="section">
+    <h2>Resources</h2>
+    <p>Our implementation will be in C/C++ using OpenMP (shared memory) and optionally MPI (distributed memory). We refer to literature on lock-free data structures and atomics, and consult documentation on <code>std::atomic</code>, <code>__sync_*</code>, and <code>__atomic_*</code> intrinsics. Testing is done on multi-core machines and GHC clusters.</p>
+  </div>
+
+  <div class="section">
+    <h2>Goals and Deliverables</h2>
+    <ul>
+      <li>Lock-free priority deque supporting push, pop, and steal operations</li>
+      <li>Implementation in OpenMP, extended with MPI</li>
+      <li>Compare priority vs. non-priority stealing performance</li>
+      <li>Evaluate 1-task vs n-task stealing tradeoffs</li>
+      <li>Benchmark across throughput, steal effectiveness, idle rate, and fairness</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Platform</h2>
+    <p>x86-64 multi-core architecture with OpenMP & MPI support; C/C++ for implementation.</p>
+  </div>
+
+  <div class="section">
+    <h2>Rough Schedule</h2>
+    <ul>
+      <li><strong>Week 1:</strong> Setup, finalize design</li>
+      <li><strong>Week 2:</strong> Implement lock-free deque</li>
+      <li><strong>Week 3:</strong> OpenMP and MPI support</li>
+      <li><strong>Week 4:</strong> Benchmarking and final report</li>
+    </ul>
+  </div>
+
 </body>
 </html>
