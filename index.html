@@ -72,7 +72,6 @@
     <h2>The Challenge</h2>
     <p>Each thread handles 1000 tasks with mixed priorities. After executing <code>k</code> tasks, it may steal from others. We compare two approaches:</p>
     <ul>
-      <li><strong>Shared deque:</strong> Easy access but prone to false sharing and contention.</li>
       <li><strong>Thread-local deques:</strong> Efficient but synchronization overhead on status propagation.</li>
     </ul>
     <p>Stealing with priorities can cause inversion if not carefully controlled. We explore ways to balance fairness, correctness, and efficiency under saturation and priority skew.</p>
@@ -80,34 +79,44 @@
 
   <div class="section">
     <h2>Resources</h2>
-    <p>Our implementation will be in C/C++ using OpenMP (shared memory) and optionally MPI (distributed memory). We refer to literature on lock-free data structures and atomics, and consult documentation on <code>std::atomic</code>, <code>__sync_*</code>, and <code>__atomic_*</code> intrinsics. Testing is done on multi-core machines and GHC clusters.</p>
+    <p>Our implementation will be in C/C++ and optionally MPI (distributed memory). We refer to literature on lock-free data structures and atomics, and consult documentation on <code>std::atomic</code>, <code>__sync_*</code>, and <code>__atomic_*</code> intrinsics. Testing is done on multi-core machines and GHC clusters.</p>
   </div>
 
-  <div class="section">
-    <h2>Goals and Deliverables</h2>
-    <ul>
-      <li>Lock-free priority deque supporting push, pop, and steal operations</li>
-      <li>Implementation in OpenMP, extended with MPI</li>
-      <li>Compare priority vs. non-priority stealing performance</li>
-      <li>Evaluate 1-task vs n-task stealing tradeoffs</li>
-      <li>Benchmark across throughput, steal effectiveness, idle rate, and fairness</li>
-    </ul>
-  </div>
+<div class="section">
+  <h2>Plan to Achieve</h2>
+  <ul>
+    <li style="background-color: #d4edda;"><strong>Amogh + Akshay:</strong> Implement a deque with local push/pop and remote steal operations. Initially, the part of stealing the work, updating the queue, and processing elements is done sequentially.</li>
+    <li style="background-color: #d4edda;"><strong>Akshay + Amogh:</strong> Introduce lock-free atomic building blocks (e.g., <code>compare_exchange</code>, <code>fetch_add</code>) to avoid synchronization locks across threads in stealing tasks from the deque.</li>
+    <li><s><strong>Compare different priority-handling approaches:</strong> separate deques by priority level vs. single-deque combination of priority tagging.</s></li>
+    <li><strong>Amogh + Akshay:</strong> Extend the deque to have <code>n</code> deques per processor, each storing tasks tagged with its priority. Operations should be lock-free, and task stealing should choose the best priority task available in that processor.</li>
+    <li><strong>Amogh + Akshay:</strong> Extend the stealing logic to choose from the queue populated with the best-priority tasks.</li>
+    <li><strong>Akshay:</strong> Measure the tradeoff between stealing 1 task vs. <code>n</code> tasks at once, analyzing time taken, synchronization overhead, communication time, and other relevant metrics.</li>
+    <li><strong>Amogh:</strong> Perform extensive benchmarking on performance characteristics such as task throughput, steal attempts, priority inversion, idle time, and scaling behavior.</li>
+    <li><strong>Amogh:</strong> Compare tradeoffs when tasks are re-stolen and analyze the resulting overhead and its effect on total execution time.</li>
+    <li><strong>Akshay:</strong> Benchmark results against a baseline with random (non-priority) stealing to evaluate the benefit of priority-based approaches.</li>
+    <li><em>Nice to have:</em> <strong>Amogh + Akshay:</strong> Implement batching logic where each processor, after executing <code>n</code> tasks, attempts to steal higher-priority tasks from random processors. Evaluate whether this improves high-priority task completion without harming low-priority tasks.</li>
+    <li><em>Nice to have:</em> <strong>Akshay + Amogh:</strong> Implement a distributed-memory version using MPI, where each process represents a node with local worker threads and simulates stealing across nodes via message passing.</li>
+  </ul>
+</div>
+
 
   <div class="section">
     <h2>Platform</h2>
-    <p>x86-64 multi-core architecture with OpenMP & MPI support; C/C++ for implementation.</p>
+    <p>x86-64 multi-core architecture C/C++ for implementation.</p>
   </div>
 
   <div class="section">
     <h2>Rough Schedule</h2>
-    <ul>
-      <li><strong>Week 1:</strong> Setup, finalize design</li>
-      <li><strong>Week 2:</strong> Implement lock-free deque</li>
-      <li><strong>Week 3:</strong> OpenMP and MPI support</li>
-      <li><strong>Week 4:</strong> Benchmarking and final report</li>
-    </ul>
-  </div>
+  <ul>
+    <li><strong><s>Week 1:</s></strong> <s>Setup, approach design finalise</s></li>
+    <li><strong><s>Week 2:</s></strong> <s>Lock free implementation for the dequeue complete</s></li>
+    <li><strong>Week 3 (First Half):</strong> Extend implementation to handle <code>n</code> deques in a lock-free way with each deque having tasks of different priority.</li>
+    <li><strong>Week 3 (Second Half):</strong> Complete the implementation and task stealing logic of stealing the highest priority task from a random processor.</li>
+    <li><strong>Week 4 (First Half) (Nice to have):</strong> Implement logic where each processor, after performing <code>n</code> tasks, tries to steal higher-priority tasks from a random processor’s queues.</li>
+    <li><strong>Week 4 (Full):</strong> Benchmark all components, generate visualizations, and prepare the final report and poster-day materials. This runs in parallel with the nice-to-have goal, if possible.</li>
+  </ul>
+</div>
+
 
 </body>
 </html>
