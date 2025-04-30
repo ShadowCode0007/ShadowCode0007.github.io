@@ -110,12 +110,28 @@
   <ul>
     <li><strong><s>Week 1:</s></strong> <s>Setup, approach design finalise</s></li>
     <li><strong><s>Week 2:</s></strong> <s>Lock free implementation for the dequeue complete</s></li>
-    <li><strong>Week 3 (First Half):</strong> Extend implementation to handle <code>n</code> deques in a lock-free way with each deque having tasks of different priority.</li>
-    <li><strong>Week 3 (Second Half):</strong> Complete the implementation and task stealing logic of stealing the highest priority task from a random processor.</li>
-    <li><strong>Week 4 (First Half) (Nice to have):</strong> Implement logic where each processor, after performing <code>n</code> tasks, tries to steal higher-priority tasks from a random processor’s queues.</li>
-    <li><strong>Week 4 (Full):</strong> Benchmark all components, generate visualizations, and prepare the final report and poster-day materials. This runs in parallel with the nice-to-have goal, if possible.</li>
+    <li><strong><s>Week 3 (First Half):</s></strong> <s>Extend implementation to handle <code>n</code> deques in a lock-free way with each deque having tasks of different priority.</s></li>
+    <li><strong><s>Week 3 (Second Half):</s></strong> <s>Complete the implementation and task stealing logic of stealing the highest priority task from a random processor.</s></li>
+     <li><strong>Week 4 (First Half) (Nice to have):</strong> Implement logic where each processor, after performing <code>n</code> tasks, tries to steal higher-priority tasks from a random processor’s queues.</li>
+    <li><strong><s>Week 4 (Full):</s></strong> <s>Benchmark all components, generate visualizations, and prepare the final report and poster-day materials. This runs in parallel with the nice-to-have goal, if possible.</s></li>
+
   </ul>
 </div>
+
+  <div class="section">
+  <h2>Final Approach</h2>
+  <p>
+    Each processor in our system maintains a set of independent lock-free deques, with each deque dedicated to tasks of a fixed priority level; in our implementation, we use three priority levels. These deques are implemented using CAS operations, enabling processors to push and pop tasks without locks — local operations occur at one end of the deque, while remote processors steal from the opposite end, reducing contention. To ensure correct memory ordering and visibility of updates across all cores, we employ explicit memory barriers using <code>__sync_synchronize()</code> at key points in the push, pop, and steal operations. Each processor keeps track of the current priority level it is executing and initially works on tasks from its highest-priority deque. When a processor’s local deque for the current priority becomes empty, it attempts to steal tasks of the same priority from other processors. If no tasks are found after probing all peers, the processor increments its local priority and begins working on the next lower level. CAS failures during stealing, which may occur due to contention, are tolerated by the system; a failed CAS does not guarantee that the deque is empty, only that another processor accessed it concurrently. This design accepts occasional priority inversions in favor of minimizing overhead from excessive retries, maintaining eventual consistency as processors repeatedly probe for work. Our implementation carefully balances the overhead of aggressive stealing with the need to enforce strong priority execution guarantees, and we evaluate this balance using metrics such as CAS failure rates, priority inversion occurrences, and average stealing effort.
+  </p>
+</div>
+
+  <div class="section">
+  <h2>Conclusion</h2>
+  <p>
+    Our project implements a scalable, lock-free work-stealing task system designed to efficiently distribute work across multiple processor cores. We evaluated system performance by measuring the total execution time required to complete a fixed set of tasks with varying workloads and distrbution on systems with varying core counts, specifically 4, 8, and 12 cores for most tests. The results demonstrate strong scalability when increasing from 4 to 8 cores, with execution times decreasing by more than half. This shows excellent parallel efficiency, where the benefits of parallelizing work significantly outweigh the overhead from synchronization and task-stealing operations. However, for fewer number of tasks, the performance gains diminish. For larger tasks with higher number of cores the execution time shows good improvement with less overhead cost. As the system scales, it transitions from being computation-bound to overhead-bound if the workload size does not proportionally increase. Our findings highlight the importance of balancing task granularity, workload size, and core count when designing scalable parallel systems. We also benchmarked all our tests with a single lock free dequeue which is not priority aware and our results show the overhead of our solution is 15-25 percent across workloads.
+  </p>
+</div>
+
 
 
 </body>
