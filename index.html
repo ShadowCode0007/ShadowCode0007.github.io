@@ -60,11 +60,12 @@
     if task != NULL:
         execute(task)
     else:
-        victim = random_other_thread()
+        victim = check_other_threads()
         task = steal_lowest_priority_task_from(victim)
         if task != NULL:
             execute(task)
         else:
+            increment local_priority
             spin_wait()</code></pre>
   </div>
 
